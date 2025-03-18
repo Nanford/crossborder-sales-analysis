@@ -6,7 +6,7 @@ def test_mysql_connection():
     
     # 测试配置列表
     configs = [
-        {"user": "root", "password": "DRsXT5ZJ6Oi55LPQ", "description": "当前配置"},
+        {"user": "root", "password": "你的密码", "description": "当前配置"},
         {"user": "root", "password": "", "description": "空密码"},
         {"user": "root", "password": "root", "description": "默认密码"},
         {"user": "root", "password": "password", "description": "常用密码"}
