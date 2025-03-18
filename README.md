@@ -107,22 +107,22 @@ npm start
 crossborder-sales-analysis/
 │
 ├── backend/ # 后端代码
-│ ├── main.py # 主应用入口
-│ ├── models.py # 数据模型
-│ ├── schemas.py # Pydantic模式
-│ ├── database.py # 数据库连接
-│ ├── ai_service.py # AI分析服务
-│ └── uploads/ # 上传文件存储
+│   ├── main.py # 主应用入口
+│   ├── models.py # 数据模型
+│   ├── schemas.py # Pydantic模式
+│   ├── database.py # 数据库连接
+│   ├── ai_service.py # AI分析服务
+│   └── uploads/ # 上传文件存储
 │
 ├── frontend/ # 前端代码
-│ ├── public/ # 静态资源
-│ └── src/ # 源代码
-│ ├── App.js # 主应用组件
-│ ├── components/ # UI组件
-│ │ ├── Dashboard.js # 主看板
-│ │ ├── DataImport.js # 数据导入
-│ │ └── AIAnalysis.js # AI分析
-│ └── index.js # 入口文件
+│   ├── public/ # 静态资源
+│   └── src/ # 源代码
+│       ├── App.js # 主应用组件
+│       ├── components/ # UI组件
+│       │   ├── Dashboard.js # 主看板
+│       │   ├── DataImport.js # 数据导入
+│       │   └── AIAnalysis.js # AI分析
+│       └── index.js # 入口文件
 │
 └── init_database.sql # 数据库初始化脚本
 
