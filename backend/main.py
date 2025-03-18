@@ -157,9 +157,6 @@ def get_platform_comparison(db: Session = Depends(get_db)):
 @app.get("/analysis/salesperson-comparison/")
 def get_salesperson_comparison(db: Session = Depends(get_db), week: Optional[str] = None):
     """获取销售人员业绩数据"""
-    # 确定查询的时间范围
-    start_date, end_date = get_date_range_for_week(week)
-    
     # 查询当前周期数据
     current_query = db.query(
         models.SalesData.sales_person,
@@ -168,33 +165,34 @@ def get_salesperson_comparison(db: Session = Depends(get_db), week: Optional[str
         func.sum(models.SalesData.order_count).label("order_count")
     )
     
-    if start_date and end_date:
-        current_query = current_query.filter(models.SalesData.date.between(start_date, end_date))
+    # 如果指定了特定周期，按指定周期筛选，否则使用"本周"
+    if week and week != 'all':
+        current_query = current_query.filter(models.SalesData.week == week)
+    else:
+        current_query = current_query.filter(models.SalesData.week == "本周")
     
     current_result = current_query.group_by(models.SalesData.sales_person).all()
     
     # 查询上一周期数据以计算环比
-    if start_date and end_date:
-        days_diff = (end_date - start_date).days + 1
-        prev_end_date = start_date - timedelta(days=1)
-        prev_start_date = prev_end_date - timedelta(days=days_diff-1)
-        
-        prev_query = db.query(
-            models.SalesData.sales_person,
-            func.sum(models.SalesData.sales_amount).label("prev_sales_amount"),
-            func.sum(models.SalesData.sales_volume).label("prev_sales_volume"),
-            func.sum(models.SalesData.order_count).label("prev_order_count")
-        ).filter(
-            models.SalesData.date.between(prev_start_date, prev_end_date)
-        ).group_by(models.SalesData.sales_person)
-        
-        prev_result = {r.sales_person: {
-            "amount": float(r.prev_sales_amount), 
-            "volume": float(r.prev_sales_volume),
-            "orders": int(r.prev_order_count)
-        } for r in prev_query.all()}
+    prev_query = db.query(
+        models.SalesData.sales_person,
+        func.sum(models.SalesData.sales_amount).label("prev_sales_amount"),
+        func.sum(models.SalesData.sales_volume).label("prev_sales_volume"),
+        func.sum(models.SalesData.order_count).label("prev_order_count")
+    )
+    
+    # 如果指定了特定周期，需要确定对应的上一周期
+    if week and week != 'all':
+        # 添加特定周期的上一周期计算逻辑
+        prev_query = prev_query.filter(models.SalesData.week == "上周")
     else:
-        prev_result = {}
+        prev_query = prev_query.filter(models.SalesData.week == "上周")
+    
+    prev_result = {r.sales_person: {
+        "amount": float(r.prev_sales_amount), 
+        "volume": float(r.prev_sales_volume),
+        "orders": int(r.prev_order_count)
+    } for r in prev_query.group_by(models.SalesData.sales_person).all()}
     
     # 格式化结果
     salesperson_data = []
@@ -320,9 +318,6 @@ async def generate_analysis_with_timeout(request):
 @app.get("/analysis/platform-detail/")
 def get_platform_detail(db: Session = Depends(get_db), week: Optional[str] = None):
     """获取各平台销售详情"""
-    # 确定查询的时间范围
-    start_date, end_date = get_date_range_for_week(week)
-    
     # 查询当前周期数据
     current_query = db.query(
         models.SalesData.platform,
@@ -331,27 +326,31 @@ def get_platform_detail(db: Session = Depends(get_db), week: Optional[str] = Non
         func.sum(models.SalesData.order_count).label("order_count")
     )
     
-    if start_date and end_date:
-        current_query = current_query.filter(models.SalesData.date.between(start_date, end_date))
+    # 如果指定了特定周期，按指定周期筛选，否则使用"本周"
+    if week and week != 'all':
+        # 这里可以添加逻辑来处理特定周期格式
+        current_query = current_query.filter(models.SalesData.week == week)
+    else:
+        current_query = current_query.filter(models.SalesData.week == "本周")
     
     current_result = current_query.group_by(models.SalesData.platform).all()
     
     # 查询上一周期数据以计算环比
-    if start_date and end_date:
-        days_diff = (end_date - start_date).days + 1
-        prev_end_date = start_date - timedelta(days=1)
-        prev_start_date = prev_end_date - timedelta(days=days_diff-1)
-        
-        prev_query = db.query(
-            models.SalesData.platform,
-            func.sum(models.SalesData.sales_amount).label("prev_sales_amount")
-        ).filter(
-            models.SalesData.date.between(prev_start_date, prev_end_date)
-        ).group_by(models.SalesData.platform)
-        
-        prev_result = {r.platform: float(r.prev_sales_amount) for r in prev_query.all()}
+    prev_query = db.query(
+        models.SalesData.platform,
+        func.sum(models.SalesData.sales_amount).label("prev_sales_amount")
+    )
+    
+    # 如果指定了特定周期，需要确定对应的上一周期
+    # 简化处理：未指定周期时使用"上周"
+    if week and week != 'all':
+        # 如果是特定周期格式如"2024-W01"，可以添加逻辑计算上一周期
+        # 目前简化为使用"上周"
+        prev_query = prev_query.filter(models.SalesData.week == "上周")
     else:
-        prev_result = {}
+        prev_query = prev_query.filter(models.SalesData.week == "上周")
+    
+    prev_result = {r.platform: float(r.prev_sales_amount) for r in prev_query.group_by(models.SalesData.platform).all()}
     
     # 格式化结果
     platform_details = []
@@ -369,6 +368,7 @@ def get_platform_detail(db: Session = Depends(get_db), week: Optional[str] = Non
             "sales_amount": float(r.sales_amount),
             "sales_volume": float(r.sales_volume),
             "order_count": int(r.order_count),
+            "previous_amount": prev_amount,
             "change_rate": round(change_rate, 2)
         })
     

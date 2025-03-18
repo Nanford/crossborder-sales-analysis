@@ -74,10 +74,10 @@ def call_deepseek_api(prompt: str) -> str:
                 {"role": "user", "content": prompt}
             ],
             "temperature": 0.7,  # 较低的温度确保输出的一致性
-            "max_tokens": 4000
+            "max_tokens": 3000
         }
         
-        response = requests.post(DEEPSEEK_API_URL, headers=headers, json=payload, timeout=30)
+        response = requests.post(DEEPSEEK_API_URL, headers=headers, json=payload, timeout=180)
         
         if response.status_code == 200:
             result = response.json()
@@ -136,7 +136,7 @@ def generate_fallback_analysis(data_summary: Dict) -> str:
 """
     # 添加热销商品分析
     if data_summary["top_sales"]:
-        analysis += "本周销售额前五的产品是:\n\n"
+        analysis += "请求失败展示样例数据：本周销售额前五的产品是:\n\n"
         for i, product in enumerate(data_summary["top_sales"][:5], 1):
             analysis += f"{i}. **{product['product_name']}** (SKU: {product['sku']})，销售额: ¥{product['value']:.2f}\n"
         analysis += "\n**建议**: 确保这些热销商品库存充足，并考虑开发相似产品线。\n\n"

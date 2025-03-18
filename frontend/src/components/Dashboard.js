@@ -60,7 +60,7 @@ const Dashboard = () => {
       
       // 创建带有超时的请求配置
       const axiosConfig = {
-        timeout: 100000,  // 10秒超时
+        timeout: 180000,  // 180秒超时
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
@@ -918,13 +918,35 @@ const Dashboard = () => {
         indicator: indicator,
         shape: 'circle',
         splitNumber: 5,
-        radius: '65%'
+        radius: '65%',
+        name: {
+          textStyle: {
+            color: '#333',
+            fontSize: 14
+          }
+        },
+        splitArea: {
+          areaStyle: {
+            color: ['rgba(255, 255, 255, 0.5)', 'rgba(240, 240, 240, 0.5)']
+          }
+        }
       },
       series: [{
         type: 'radar',
         data: seriesData,
         areaStyle: {
           opacity: 0.1
+        },
+         areaStyle: {
+          opacity: 0.2
+        },
+        emphasis: {
+          lineStyle: {
+            width: 4
+          },
+          areaStyle: {
+            opacity: 0.5
+          }
         }
       }]
     };
