@@ -4,11 +4,17 @@ from sqlalchemy.orm import sessionmaker
 import time
 import pymysql
 
-# MySQL数据库连接信息
-DB_HOST = "localhost"
-DB_USER = "root"
-DB_PASS = "your password"
-DB_NAME = "sales_data"  # 默认数据库名
+   from dotenv import load_dotenv
+   import os
+
+# 加载.env文件中的环境变量
+load_dotenv()
+
+# 使用环境变量
+DB_HOST = os.getenv("DB_HOST")
+DB_USER = os.getenv("DB_USER")
+DB_PASS = os.getenv("DB_PASS")
+DB_NAME = os.getenv("DB_NAME")
 
 # 尝试连接并检查或创建数据库
 def setup_database():
