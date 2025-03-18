@@ -4,7 +4,7 @@ from typing import Dict, Any
 
 # DeepSeek API配置
 DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"  # 请根据实际API地址调整
-DEEPSEEK_API_KEY = "sk-d896625d1b1d408c96ca3b6e2ef5abb5"  # 替换为您的实际API密钥
+DEEPSEEK_API_KEY = "your-appkey-instead"  # 替换为您的实际API密钥
 
 def generate_analysis(data: Dict[Any, Any]) -> str:
     """使用DeepSeek AI生成销售数据分析"""
