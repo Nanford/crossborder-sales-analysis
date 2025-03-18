@@ -1,0 +1,64 @@
+我需要做一个网页数据看板，针对跨境电商销售数据分析，需要包含以下功能：
+1. 数据导入：支持多种数据格式，如Excel、CSV等，并能自动识别数据结构，每次上传对应的数据。
+2.数据分析：支持数据清洗、数据分析、数据可视化等。
+3.数据展示：支持数据表格、图表、仪表盘等多种展示方式。
+分析的内容有（数据每次都是本周和上周的对比）：
+1、展示商品销量Top5，展示对应的sku和名称；
+2、展示销售额Top5，展示对应的sku和名称；
+3、展示环比销量下降的Top5，展示对应的sku和名称；
+4、展示环比销量上升的Top5，展示对应的sku和名称；
+5、展示不同国家销售额的占比和环比情况；
+6、平台销售额、销量、订单、毛利率环比；
+7、销售人员销售额、销量、订单、毛利率环比；
+推荐使用以下技术方案：
+前端： React/Vue + Ant Design或Echarts。
+后端： Python (FastAPI或Flask) 提供数据接口，使用Pandas处理数据。
+数据库： 暂存处理后的数据至数据库（如MySQL）或直接用CSV/Excel导入处理。
+AI辅助分析： 集成ChatGPT或deepseek生成式AI，自动分析数据给出建议。
+
+
+
+数据库：
+__tablename__ = "sales_data"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    sku = Column(String(50), index=True)
+    spu = Column(String(50), index=True)
+    platform = Column(String(50), index=True)
+    shop = Column(String(50))
+    site = Column(String(50))
+    warehouse = Column(String(50))
+    buyer_country = Column(String(50), index=True)
+    sales_person = Column(String(50), index=True)
+    order_count = Column(Integer, default=0)
+    product_name = Column(String(200))
+    sales_volume = Column(Float, default=0)
+    sales_amount = Column(Float, default=0)
+    cost = Column(Float)
+    profit = Column(Float)
+    profit_rate = Column(Float, default=0)
+    order_status = Column(String(50), nullable=True)
+    week = Column(String(20), index=True)
+    month = Column(String(10))
+    created_at = Column(DateTime, default=func.now())
+
+excel表格和数据库匹配
+column_mapping = {
+            'sku': 'sku',
+            'spu': 'spu',
+            '名称': 'product_name',
+            '店铺': 'shop',
+            '站点': 'site',
+            '仓库': 'warehouse',
+            '销量': 'sales_volume',
+            '销售额': 'sales_amount', 
+            '买家国家': 'buyer_country',
+            '平台': 'platform',
+            '销售': 'sales_person',
+            '订单数': 'order_count',
+            '销售毛利额': 'profit',
+            '毛利率': 'profit_rate',
+            '周': 'week',
+            '订单状态': 'order_status',
+            '月': 'month'
+        }
