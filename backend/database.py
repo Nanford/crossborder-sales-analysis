@@ -7,7 +7,7 @@ import pymysql
 # MySQL数据库连接信息
 DB_HOST = "localhost"
 DB_USER = "root"
-DB_PASS = "DRsXT5ZJ6Oi55LPQ"
+DB_PASS = "your password"
 DB_NAME = "sales_data"  # 默认数据库名
 
 # 尝试连接并检查或创建数据库
