@@ -1,10 +1,15 @@
 import json
 import requests
 from typing import Dict, Any
+from dotenv import load_dotenv
+import os
+
+# 加载.env文件中的环境变量
+load_dotenv()
 
 # DeepSeek API配置
 DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"  # 请根据实际API地址调整
-DEEPSEEK_API_KEY = "your-appkey-instead"  # 替换为您的实际API密钥
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY") 
 
 def generate_analysis(data: Dict[Any, Any]) -> str:
     """使用DeepSeek AI生成销售数据分析"""
