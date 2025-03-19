@@ -1,29 +1,11 @@
 import React, { useState } from 'react';
-import { Card, Button, Typography, Spin, Result, Alert } from 'antd';
+import { Button, Typography, Spin, Result, Alert } from 'antd';
 import { RobotOutlined, LineChartOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import ReactMarkdown from 'react-markdown';
-// 添加必要的插件
-import remarkGfm from 'remark-gfm';  // 支持 GitHub Flavored Markdown
-import rehypeRaw from 'rehype-raw';  // 支持原始HTML
 
 const { Title } = Typography;
 
-// 添加自定义样式
-const markdownStyles = {
-  container: {
-    padding: '20px',
-    lineHeight: '1.6',
-    fontSize: '14px'
-  },
-  heading: {
-    marginTop: '24px',
-    marginBottom: '16px'
-  },
-  list: {
-    marginLeft: '20px'
-  }
-};
 
 const AIAnalysis = ({ top_sales, top_increased, top_decreased, country_distribution, platform_comparison, salesperson_comparison }) => {
   const [analysis, setAnalysis] = useState(null);
