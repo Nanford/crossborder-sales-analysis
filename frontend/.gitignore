@@ -1,5 +1,5 @@
 # 依赖目录
-/frontend/node_modules
+/node_modules
 /.pnp
 .pnp.js
 

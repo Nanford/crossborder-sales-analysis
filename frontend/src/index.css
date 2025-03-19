@@ -40,3 +40,56 @@ code {
   border-radius: 4px;
   background-color: #fafafa;
 } 
+
+/* 在你的CSS文件中添加 */
+.markdown-container {
+  /* 基础样式 */
+  color: rgba(0, 0, 0, 0.85);
+  
+  /* 标题样式 */
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 500;
+    line-height: 1.4;
+    margin-bottom: 16px;
+  }
+  
+  /* 段落样式 */
+  p {
+    margin-bottom: 16px;
+    line-height: 1.8;
+  }
+  
+  /* 列表样式 */
+  ul, ol {
+    margin-bottom: 16px;
+    padding-left: 24px;
+  }
+  
+  /* 强调文本样式 */
+  strong {
+    color: #1890ff;
+    font-weight: 600;
+  }
+  
+  /* 引用样式 */
+  blockquote {
+    padding: 8px 16px;
+    border-left: 4px solid #1890ff;
+    background-color: #f0f2f5;
+    margin-bottom: 16px;
+  }
+  
+  /* 代码块样式 */
+  code {
+    background-color: #f0f2f5;
+    padding: 2px 4px;
+    border-radius: 3px;
+  }
+  
+  /* 分隔线样式 */
+  hr {
+    border: none;
+    border-top: 1px solid #e8e8e8;
+    margin: 16px 0;
+  }
+}

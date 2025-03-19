@@ -62,3 +62,6 @@ column_mapping = {
             '订单状态': 'order_status',
             '月': 'month'
         }
+
+        // … 保留其他已有代码 …
+

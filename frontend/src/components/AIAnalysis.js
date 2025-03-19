@@ -1,12 +1,31 @@
-import React, { useState, useEffect } from 'react';
-import { Card, Button, Typography, Spin, Result, Divider, Alert } from 'antd';
-import { RobotOutlined, ReloadOutlined } from '@ant-design/icons';
+import React, { useState } from 'react';
+import { Card, Button, Typography, Spin, Result, Alert } from 'antd';
+import { RobotOutlined, LineChartOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import ReactMarkdown from 'react-markdown';
+// 添加必要的插件
+import remarkGfm from 'remark-gfm';  // 支持 GitHub Flavored Markdown
+import rehypeRaw from 'rehype-raw';  // 支持原始HTML
 
-const { Title, Paragraph, Text } = Typography;
+const { Title } = Typography;
 
-const AIAnalysis = ({ top_sales, top_increased, top_decreased, country_distribution, platform_comparison }) => {
+// 添加自定义样式
+const markdownStyles = {
+  container: {
+    padding: '20px',
+    lineHeight: '1.6',
+    fontSize: '14px'
+  },
+  heading: {
+    marginTop: '24px',
+    marginBottom: '16px'
+  },
+  list: {
+    marginLeft: '20px'
+  }
+};
+
+const AIAnalysis = ({ top_sales, top_increased, top_decreased, country_distribution, platform_comparison, salesperson_comparison }) => {
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -22,7 +41,8 @@ const AIAnalysis = ({ top_sales, top_increased, top_decreased, country_distribut
         top_increased: top_increased || [],
         top_decreased: top_decreased || [],
         country_distribution: country_distribution || [],
-        platform_comparison: platform_comparison || {}
+        platform_comparison: platform_comparison || {},
+        salesperson_comparison: salesperson_comparison || []
       };
       
       console.log("发送AI分析请求，数据:", analysisData);
@@ -48,48 +68,103 @@ const AIAnalysis = ({ top_sales, top_increased, top_decreased, country_distribut
     }
   };
 
-  // 当数据变化时重新生成分析
-  useEffect(() => {
-    if (top_sales && top_sales.length > 0) {
-      generateAnalysis();
-    }
-  }, [top_sales, top_increased, top_decreased, country_distribution, platform_comparison]);
-
   return (
-    <Card 
-      title={<Title level={4}><RobotOutlined /> AI智能分析</Title>}
-      extra={
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <Title level={4}><RobotOutlined /> AI智能分析</Title>
         <Button 
-          icon={<ReloadOutlined />} 
-          onClick={generateAnalysis} 
+          type="primary"
+          icon={<LineChartOutlined />}
+          onClick={generateAnalysis}
           loading={loading}
-          disabled={loading}
+          disabled={loading || !top_sales || top_sales.length === 0}
         >
-          重新生成
+          {analysis ? '重新生成分析' : '生成分析报告'}
         </Button>
-      }
-      className="analysis-card"
-    >
+      </div>
+      
       {loading ? (
         <div style={{ textAlign: 'center', padding: '30px' }}>
           <Spin size="large" />
           <div style={{ marginTop: '10px' }}>AI正在分析数据，请稍候...</div>
         </div>
       ) : error ? (
-        <Alert type="error" message="分析生成失败" description={error} />
+        <Alert 
+          type="error" 
+          message="分析生成失败" 
+          description={error}
+          action={
+            <Button size="small" danger onClick={generateAnalysis}>
+              重试
+            </Button>
+          }
+        />
       ) : analysis ? (
-        <div className="markdown-container">
-          <ReactMarkdown>{analysis}</ReactMarkdown>
+        <div className="markdown-content">
+          <ReactMarkdown>
+            {analysis}
+          </ReactMarkdown>
         </div>
       ) : (
         <Result
           icon={<RobotOutlined />}
-          title="尚未生成分析"
-          subTitle="请上传销售数据后自动生成分析"
+          title="等待生成分析"
+          subTitle="点击上方按钮开始生成AI分析报告"
         />
       )}
-    </Card>
+    </div>
   );
 };
+
+// 添加样式
+const styles = `
+  .markdown-content {
+    padding: 16px;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  
+  .markdown-content h1 {
+    font-size: 24px;
+    font-weight: bold;
+    margin: 20px 0;
+  }
+  
+  .markdown-content h2 {
+    font-size: 20px;
+    font-weight: bold;
+    margin: 16px 0;
+  }
+  
+  .markdown-content h3 {
+    font-size: 18px;
+    font-weight: bold;
+    margin: 14px 0;
+  }
+  
+  .markdown-content p {
+    margin: 12px 0;
+    line-height: 1.6;
+  }
+  
+  .markdown-content ul {
+    margin: 12px 0;
+    padding-left: 20px;
+  }
+  
+  .markdown-content li {
+    margin: 6px 0;
+  }
+  
+  .markdown-content strong {
+    color: #1890ff;
+    font-weight: bold;
+  }
+`;
+
+// 将样式添加到文档中
+const styleSheet = document.createElement("style");
+styleSheet.innerText = styles;
+document.head.appendChild(styleSheet);
 
 export default AIAnalysis; 
