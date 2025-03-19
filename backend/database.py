@@ -6,12 +6,6 @@ import pymysql
 from dotenv import load_dotenv
 import os
 
-<<<<<<< HEAD
-=======
-   from dotenv import load_dotenv
-   import os
-
->>>>>>> 730163bb269e3de9875f88c6c69b67d445e082f8
 # 加载.env文件中的环境变量
 load_dotenv()
 
