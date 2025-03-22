@@ -56,7 +56,7 @@ const Dashboard = () => {
     setError(null);
     
     try {
-      console.log('开始加载数据...');
+      console.log('开始加载数据..');
       
       // 创建带有超时的请求配置
       const axiosConfig = {
@@ -81,8 +81,8 @@ const Dashboard = () => {
       ] = await Promise.all([
         axios.get(`http://localhost:8000/analysis/top-sales-volume/?week=${weekFilter === 'all' ? '' : weekFilter}`, axiosConfig),
         axios.get(`http://localhost:8000/analysis/top-sales-amount/?week=${weekFilter === 'all' ? '' : weekFilter}`, axiosConfig),
-        axios.get('http://localhost:8000/analysis/top-increased/', axiosConfig),
-        axios.get('http://localhost:8000/analysis/top-decreased/', axiosConfig),
+        axios.get('http://localhost:8000/analysis/top-increased', axiosConfig),
+        axios.get('http://localhost:8000/analysis/top-decreased', axiosConfig),
         axios.get('http://localhost:8000/analysis/country-distribution/', axiosConfig),
         axios.get('http://localhost:8000/analysis/platform-comparison/', axiosConfig),
         axios.get('http://localhost:8000/analysis/platform-detail/', axiosConfig),
@@ -91,9 +91,9 @@ const Dashboard = () => {
       ]);
       
       // 打印API响应状态和数据结构
-      console.log('API响应状态:');
-      console.log('销量Top5 状态:', topSalesVolumeRes.status);
-      console.log('销售额Top5 状态:', topSalesAmountRes.status);
+      console.log('API响应');
+      console.log('销量Top5', topSalesVolumeRes.status);
+      console.log('销售额Top5', topSalesAmountRes.status);
       
       // 检查API响应内容
       if (Array.isArray(topSalesVolumeRes.data) && topSalesVolumeRes.data.length > 0) {
@@ -121,14 +121,14 @@ const Dashboard = () => {
         platformSalesDistribution: platformSalesDistributionRes.data || {}
       });
     } catch (err) {
-      console.error('加载数据时出错:', err);
+      console.error('加载数据时出错', err);
       setError(`加载数据失败: ${err.message || '未知错误'}`);
       
       // 检查是否有部分数据可用
       if (data.topSalesVolume.length > 0 || data.topSalesAmount.length > 0) {
         console.log('使用已有的部分数据');
       } else {
-        // 只在没有任何数据时显示错误信息
+      // 只在没有任何数据时显示错误信息
         setError(`无法连接到数据源: ${err.message}. 请检查API服务是否运行。`);
       }
     } finally {
@@ -141,13 +141,13 @@ const Dashboard = () => {
     loadAllData();
   }, [weekFilter]);
 
-  // 销量Top5柱状图配置 - 优化X轴标签
+  // 销量Top5柱状图配置
   const getTopSalesVolumeOption = () => {
     if (!data.topSalesVolume || data.topSalesVolume.length === 0) {
       return { title: { text: '销量Top5' } };
     }
 
-    // 数据准备 - 截断产品名
+    // 数据准备 - 截断产品
     const shortenName = (name) => {
       if (!name) return '未知产品';
       return name.length > 10 ? name.substring(0, 10) + '...' : name;
@@ -162,9 +162,9 @@ const Dashboard = () => {
         trigger: 'axis',
         axisPointer: { type: 'shadow' },
         formatter: function(params) {
-          // 显示完整产品名
+          // 显示完整产品
           const index = params[0].dataIndex;
-          return `${originalNames[index]}<br/>销量: ${formatNumber(params[0].value)}`;
+          return `${originalNames[index]}<br/>销量 ${formatNumber(params[0].value)}`;
         }
       },
       grid: {
@@ -210,7 +210,7 @@ const Dashboard = () => {
       return { title: { text: '销售额Top5' } };
     }
 
-    // 数据准备 - 截断产品名
+    // 数据准备 - 截断产品
     const shortenName = (name) => {
       if (!name) return '未知产品';
       return name.length > 10 ? name.substring(0, 10) + '...' : name;
@@ -225,7 +225,7 @@ const Dashboard = () => {
         trigger: 'axis',
         axisPointer: { type: 'shadow' },
         formatter: function(params) {
-          // 显示完整产品名
+          // 显示完整产品
           const index = params[0].dataIndex;
           return `${originalNames[index]}<br/>销售额: ${formatNumber(params[0].value, true)}`;
         }
@@ -283,12 +283,12 @@ const Dashboard = () => {
   // 环比上升Top5柱状图配置
   const getTopIncreasedOption = () => {
     if (!data.topIncreased || data.topIncreased.length === 0) {
-      return { title: { text: '环比上升Top5' } };
+      return { title: { text: '销售额环比上升Top5' } };
     }
 
     console.log("环比上升数据:", JSON.stringify(data.topIncreased)); // 添加详细日志
     
-    // 截断产品名
+    // 截断产品
     const shortenName = (name) => {
       if (!name) return '未知产品';
       return name.length > 10 ? name.substring(0, 10) + '...' : name;
@@ -296,14 +296,14 @@ const Dashboard = () => {
     
     const products = data.topIncreased.map(item => shortenName(item.product_name)).slice(0, 5);
     
-    // 手动计算增长量，确保其正确性
-    const volumes = data.topIncreased.map(item => {
-      // 当API提供的volume_change不可用或不正确时，自己计算
+    // 手动计算增长量，确保其正确
+    const amounts = data.topIncreased.map(item => {
+      // 当API提供的amount_change不可用或不正确时，自己计算
       const current = parseFloat(item.current_value) || 0;
       const previous = parseFloat(item.previous_value) || 0;
       const change = current - previous;  // 增长量是本期减去上期
       
-      console.log(`产品: ${item.product_name}, 本期: ${current}, 上期: ${previous}, 计算增长量: ${change}, API返回增长量: ${item.volume_change}`);
+      console.log(`产品: ${item.product_name}, 本期: ${current}, 上期: ${previous}, 计算增长量 ${change}, API返回增长量 ${item.amount_change}`);
       
       // 确保使用正确的增长量
       return change > 0 ? change : 0;  // 只取正值
@@ -313,7 +313,7 @@ const Dashboard = () => {
 
     return {
       title: {
-        text: '销量环比上升Top5',
+        text: '销售额环比上升Top5',
         left: 'center'
       },
       tooltip: {
@@ -327,9 +327,9 @@ const Dashboard = () => {
           const change = current - previous;
           
           return `${originalNames[index]}<br/>
-                  增长量: +${formatNumber(change)}<br/>
-                  本期: ${formatNumber(current)}<br/>
-                  上期: ${formatNumber(previous)}`;
+                  增长额: +${formatNumber(change, true)}<br/>
+                  本期: ${formatNumber(current, true)}<br/>
+                  上期: ${formatNumber(previous, true)}`;
         }
       },
       grid: {
@@ -350,13 +350,18 @@ const Dashboard = () => {
       yAxis: { 
         type: 'value',
         axisLabel: {
-          formatter: '{value}'
+          formatter: function(value) {
+            if (value >= 1000) {
+              return '$' + (value / 1000).toFixed(1) + 'k';
+            }
+            return '$' + value;
+          }
         }
       },
       series: [{
-        name: '销量增长',
+        name: '销售额增长',
         type: 'bar',
-        data: volumes,
+        data: amounts,
         itemStyle: {
           color: INCREASE_COLOR
         },
@@ -364,7 +369,10 @@ const Dashboard = () => {
           show: true,
           position: 'top',
           formatter: function(params) {
-            return '+' + formatNumber(params.value);
+            if (params.value >= 1000) {
+              return '+$' + (params.value / 1000).toFixed(1) + 'k';
+            }
+            return '+$' + formatNumber(params.value);
           }
         }
       }]
@@ -374,13 +382,13 @@ const Dashboard = () => {
   // 环比下降Top5柱状图配置
   const getTopDecreasedOption = () => {
     if (!data.topDecreased || data.topDecreased.length === 0) {
-      return { title: { text: '环比下降Top5' } };
+      return { title: { text: '销售额环比下降Top5' } };
     }
 
     // 添加调试信息
     console.log("环比下降数据:", JSON.stringify(data.topDecreased));
     
-    // 截断产品名
+    // 截断产品
     const shortenName = (name) => {
       if (!name) return '未知产品';
       return name.length > 10 ? name.substring(0, 10) + '...' : name;
@@ -388,14 +396,14 @@ const Dashboard = () => {
     
     const products = data.topDecreased.map(item => shortenName(item.product_name)).slice(0, 5);
     
-    // 手动计算下降量，确保其正确性
-    const volumes = data.topDecreased.map(item => {
-      // 当API提供的volume_decrease不可用或不正确时，自己计算
+    // 手动计算下降量，确保其正确
+    const amounts = data.topDecreased.map(item => {
+      // 当API提供的amount_decrease不可用或不正确时，自己计算
       const current = parseFloat(item.current_value) || 0;
       const previous = parseFloat(item.previous_value) || 0;
       const decrease = previous - current;  // 下降量是上期减去本期
       
-      console.log(`产品: ${item.product_name}, 本期: ${current}, 上期: ${previous}, 计算下降量: ${decrease}, API返回下降量: ${item.volume_decrease}`);
+      console.log(`产品: ${item.product_name}, 本期: ${current}, 上期: ${previous}, 计算下降量 ${decrease}, API返回下降量 ${item.amount_decrease}`);
       
       // 确保使用正确的下降量
       return decrease > 0 ? decrease : 0;  // 只取正值
@@ -405,7 +413,7 @@ const Dashboard = () => {
 
     return {
       title: {
-        text: '销量环比下降Top5',
+        text: '销售额环比下降Top5',
         left: 'center'
       },
       tooltip: {
@@ -419,9 +427,9 @@ const Dashboard = () => {
           const decrease = previous - current;
           
           return `${originalNames[index]}<br/>
-                  下降量: ${formatNumber(decrease)}<br/>
-                  本期: ${formatNumber(current)}<br/>
-                  上期: ${formatNumber(previous)}`;
+                  下降额: ${formatNumber(decrease, true)}<br/>
+                  本期: ${formatNumber(current, true)}<br/>
+                  上期: ${formatNumber(previous, true)}`;
         }
       },
       grid: {
@@ -442,13 +450,18 @@ const Dashboard = () => {
       yAxis: { 
         type: 'value',
         axisLabel: {
-          formatter: '{value}'
+          formatter: function(value) {
+            if (value >= 1000) {
+              return '$' + (value / 1000).toFixed(1) + 'k';
+            }
+            return '$' + value;
+          }
         }
       },
       series: [{
-        name: '销量下降',
+        name: '销售额下降',
         type: 'bar',
-        data: volumes,
+        data: amounts,
         itemStyle: {
           color: DECREASE_COLOR
         },
@@ -456,7 +469,10 @@ const Dashboard = () => {
           show: true,
           position: 'top',
           formatter: function(params) {
-            return formatNumber(params.value);
+            if (params.value >= 1000) {
+              return '$' + (params.value / 1000).toFixed(1) + 'k';
+            }
+            return '$' + formatNumber(params.value);
           }
         }
       }]
@@ -466,7 +482,7 @@ const Dashboard = () => {
   // 国家销售分布饼图选项 - 增强显示
   const getCountryPieOption = () => {
     if (!data.countryDistribution || data.countryDistribution.length === 0) {
-      return { title: { text: '国家销售分布' } };
+      return { title: { text: '国家销售分' } };
     }
 
     // 数据准备
@@ -481,7 +497,7 @@ const Dashboard = () => {
 
     return {
       title: {
-        text: '各国家销售分布',
+        text: '各国家销售分',
         left: 'center'
       },
       tooltip: {
@@ -536,7 +552,7 @@ const Dashboard = () => {
           center: ['50%', '50%']
         }
       ],
-      // 添加总销售额显示在中心
+      // 添加总销售额显示在中
       graphic: {
         type: 'text',
         left: 'center',
@@ -643,7 +659,7 @@ const Dashboard = () => {
       return { title: { text: '销售人员业绩对比' } };
     }
 
-    // 只显示前8名销售人员
+    // 只显示前8名销售人
     const topSalespeople = data.salespersonComparison.slice(0, 8);
     
     // 准备图表数据
@@ -776,7 +792,7 @@ const Dashboard = () => {
           data.platformComparison.orders_change_rate || 0,
           data.platformComparison.profit_rate_change || 0
         ],
-        name: '环比变化率'
+        name: '环比变化'
       }
     ];
     
@@ -826,10 +842,10 @@ const Dashboard = () => {
     };
   };
 
-  // 新增：平台销售渠道分析 (如果API返回了平台细分数据)
+  // 新增：平台销售渠道分(如果API返回了平台细分数)
   const getPlatformChannelOption = () => {
     if (!data.platformDetail || data.platformDetail.length === 0) {
-      return { title: { text: '销售渠道分析' } };
+      return { title: { text: '销售渠道分' } };
     }
     
     const platforms = data.platformDetail.map(item => item.platform);
@@ -839,7 +855,7 @@ const Dashboard = () => {
     
     return {
       title: {
-        text: '销售渠道分析',
+        text: '销售渠道分',
         left: 'center'
       },
       tooltip: {
@@ -883,7 +899,7 @@ const Dashboard = () => {
         },
         {
           type: 'value',
-          name: '变化率',
+          name: '变化',
           axisLabel: {
             formatter: '{value}%'
           }
@@ -933,10 +949,10 @@ const Dashboard = () => {
   // 销售人员雷达图配置
   const getSalespersonRadarOption = () => {
     if (!data.salespersonComparison || data.salespersonComparison.length === 0) {
-      return { title: { text: '销售人员多维指标' } };
+      return { title: { text: '销售人员多维指标对比' } };
     }
 
-    // 只显示前5名销售人员
+    // 只显示前5名销售人
     const topSalespeople = data.salespersonComparison.slice(0, 5);
     
     // 准备雷达图数据
@@ -944,7 +960,7 @@ const Dashboard = () => {
       { name: '销售额', max: Math.max(...topSalespeople.map(p => p.sales_amount || 0)) * 1.2 },
       { name: '销量', max: Math.max(...topSalespeople.map(p => p.sales_volume || 0)) * 1.2 },
       { name: '订单数', max: Math.max(...topSalespeople.map(p => p.order_count || 0)) * 1.2 },
-      { name: '客单价', max: Math.max(...topSalespeople.map(p => p.average_order || 0)) * 1.2 },
+      { name: '客单量', max: Math.max(...topSalespeople.map(p => p.average_order || 0)) * 1.2 },
       { name: '环比增长', max: Math.max(20, Math.max(...topSalespeople.map(p => Math.max(p.change_rate || 0, 0)))) } 
     ];
     
@@ -963,7 +979,7 @@ const Dashboard = () => {
 
     return {
       title: {
-        text: '销售人员多维分析',
+        text: '销售人员多维指标对比',
         left: 'center'
       },
       tooltip: {
@@ -1278,7 +1294,7 @@ const Dashboard = () => {
     };
   };
 
-  // 销量Top5表格列
+  // 销量Top5表格配置
   const salesVolumeColumns = [
     {
       title: 'SKU',
@@ -1301,7 +1317,7 @@ const Dashboard = () => {
     }
   ];
 
-  // 销售额Top5表格列
+  // 销售额Top5表格配置
   const salesAmountColumns = [
     {
       title: 'SKU',
@@ -1324,7 +1340,7 @@ const Dashboard = () => {
     }
   ];
 
-  // 环比上升表格列
+  // 环比上升表格配置
   const increasedColumns = [
     {
       title: 'SKU',
@@ -1358,7 +1374,7 @@ const Dashboard = () => {
     }
   ];
 
-  // 环比下降表格列
+  // 环比下降表格配置
   const decreasedColumns = [
     {
       title: 'SKU',
@@ -1395,7 +1411,7 @@ const Dashboard = () => {
   // 销售人员业绩表格列定义
   const salespersonColumns = [
     {
-      title: '销售人员',
+      title: '销售人',
       dataIndex: 'sales_person',
       key: 'sales_person',
       width: 120
@@ -1449,7 +1465,7 @@ const Dashboard = () => {
       }
     },
     {
-      title: '毛利率',
+      title: '毛利',
       dataIndex: 'current_profit_rate',
       key: 'current_profit_rate',
       render: (val) => val !== undefined && val !== null ? `${val.toFixed(2)}%` : 'N/A',
@@ -1473,15 +1489,15 @@ const safeFormat = (value, decimals = 2) => {
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <Title level={2}>销售数据看板</Title>
         <div>
-          <span style={{ marginRight: 8 }}>周次筛选:</span>
+          <span style={{ marginRight: 8 }}>周次筛选器</span>
           <Select
             value={weekFilter}
             onChange={value => setWeekFilter(value)}
             style={{ width: 120, marginRight: 16 }}
           >
             <Option value="all">所有周次</Option>
-            <Option value="202501">2025年第1周</Option>
-            <Option value="202502">2025年第2周</Option>
+            <Option value="本周">本周</Option>
+            <Option value="上周">上周</Option>
           </Select>
           <Button
             type="primary"
@@ -1509,7 +1525,7 @@ const safeFormat = (value, decimals = 2) => {
       {/* 加载状态 */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: '100px 0' }}>
-          <Spin size="large" tip="数据加载中..." />
+          <Spin size="large" tip="数据加载中.." />
         </div>
       ) : (
         <>
@@ -1568,12 +1584,18 @@ const safeFormat = (value, decimals = 2) => {
                   title="毛利率"
                   value={data.platformComparison?.current_profit_rate || 0}
                   precision={2}
-                  valueStyle={{  color: data.platformComparison?.profit_rate_change >= 0 ? '#3f8600' : '#cf1322'  }}
+                  valueStyle={{ color: '#3f8600' }}
                   suffix="%"
-                  prefix={
-                    data.platformComparison?.profit_rate_change >= 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />
-                  }
                 />
+                {data.platformComparison?.profit_rate_change && (
+                  <div style={{ marginTop: 5 }}>
+                    <Tag color={data.platformComparison.profit_rate_change >= 0 ? 'green' : 'red'}>
+                      {data.platformComparison.profit_rate_change >= 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
+                      {data.platformComparison.profit_rate_change >= 0 ? '+' : ''}
+                      {data.platformComparison.profit_rate_change.toFixed(2)}%
+                    </Tag>
+                  </div>
+                )}
               </Col>
             </Row>
           </Card>
@@ -1635,7 +1657,7 @@ const safeFormat = (value, decimals = 2) => {
           {/* 环比上升和下降Top5 */}
           <Row gutter={16} style={{ marginBottom: 16 }}>
             <Col span={12}>
-              <Card title="环比上升Top5" className="dashboard-card">
+              <Card title="销售额环比上升Top5" className="dashboard-card">
                 {data.topIncreased && data.topIncreased.length > 0 ? (
                   <ReactECharts 
                     option={getTopIncreasedOption()} 
@@ -1649,7 +1671,7 @@ const safeFormat = (value, decimals = 2) => {
               </Card>
             </Col>
             <Col span={12}>
-              <Card title="环比下降Top5" className="dashboard-card">
+              <Card title="销售额环比下降Top5" className="dashboard-card">
                 {data.topDecreased && data.topDecreased.length > 0 ? (
                   <ReactECharts 
                     option={getTopDecreasedOption()} 
@@ -1667,7 +1689,7 @@ const safeFormat = (value, decimals = 2) => {
           {/* 国家销售分布 */}
           <Row gutter={16}>
             <Col span={12}>
-              <Card title="各国家销售分布" className="dashboard-card" style={{ marginBottom: 16 }}>
+              <Card title="各国家销售分" className="dashboard-card" style={{ marginBottom: 16 }}>
                 {data.countryDistribution && data.countryDistribution.length > 0 ? (
                   <ReactECharts 
                     option={getCountryPieOption()} 
@@ -1716,7 +1738,7 @@ const safeFormat = (value, decimals = 2) => {
             </Col>
             
             <Col span={12}>
-              <Card title="平台销售渠道分析" className="dashboard-card">
+              <Card title="平台销售渠道分" className="dashboard-card">
                 {data.platformDetail && data.platformDetail.length > 0 ? (
                   <ReactECharts 
                     option={getPlatformChannelOption()} 

@@ -84,25 +84,25 @@ def get_top_sales_amount(db, week=None, limit=5):
         for row in results
     ]
 
-def get_top_increased_sales_volume(db, limit=5):
-    """获取环比销量上升Top5（按绝对增长量排序）"""
+def get_top_increased_sales_amount(db, limit=5):
+    """获取环比销售额上升Top5（按绝对增长量排序）"""
     query = """
     SELECT 
         t1.sku,
         t1.product_name,
-        t1.current_volume,
-        t2.previous_volume,
-        (t1.current_volume - t2.previous_volume) AS volume_change,
+        t1.current_amount,
+        t2.previous_amount,
+        (t1.current_amount - t2.previous_amount) AS amount_change,
         CASE 
-            WHEN t2.previous_volume > 0 THEN 
-                ((t1.current_volume - t2.previous_volume) / t2.previous_volume) * 100
+            WHEN t2.previous_amount > 0 THEN 
+                ((t1.current_amount - t2.previous_amount) / t2.previous_amount) * 100
             ELSE 0
         END AS change_rate
     FROM 
         (SELECT 
             sku, 
             product_name, 
-            SUM(sales_volume) AS current_volume
+            SUM(sales_amount) AS current_amount
          FROM 
             sales_data
          WHERE 
@@ -113,7 +113,7 @@ def get_top_increased_sales_volume(db, limit=5):
         (SELECT 
             sku, 
             product_name, 
-            SUM(sales_volume) AS previous_volume
+            SUM(sales_amount) AS previous_amount
          FROM 
             sales_data
          WHERE 
@@ -123,9 +123,9 @@ def get_top_increased_sales_volume(db, limit=5):
     ON 
         t1.sku = t2.sku
     WHERE
-        t1.current_volume > t2.previous_volume
+        t1.current_amount > t2.previous_amount
     ORDER BY 
-        volume_change DESC
+        amount_change DESC
     LIMIT :limit
     """
     
@@ -138,31 +138,31 @@ def get_top_increased_sales_volume(db, limit=5):
             "product_name": row[1],
             "current_value": float(row[2]) if row[2] is not None else 0.0,
             "previous_value": float(row[3]) if row[3] is not None else 0.0,
-            "volume_change": float(row[4]) if row[4] is not None else 0.0,  # 确保这是正确的增长量
+            "amount_change": float(row[4]) if row[4] is not None else 0.0,  # 确保这是正确的增长量
             "change_rate": float(row[5]) if row[5] is not None else 0.0
         }
         for row in results
     ]
 
-def get_top_decreased_sales_volume(db, limit=5):
-    """获取环比销量下降Top5（按绝对下降量排序）"""
+def get_top_decreased_sales_amount(db, limit=5):
+    """获取环比销售额下降Top5（按绝对下降量排序）"""
     query = """
     SELECT 
         t1.sku,
         t1.product_name,
-        t1.current_volume,
-        t2.previous_volume,
-        (t2.previous_volume - t1.current_volume) AS volume_decrease,
+        t1.current_amount,
+        t2.previous_amount,
+        (t2.previous_amount - t1.current_amount) AS amount_decrease,
         CASE 
-            WHEN t2.previous_volume > 0 THEN 
-                ((t1.current_volume - t2.previous_volume) / t2.previous_volume) * 100
+            WHEN t2.previous_amount > 0 THEN 
+                ((t1.current_amount - t2.previous_amount) / t2.previous_amount) * 100
             ELSE 0
         END AS change_rate
     FROM 
         (SELECT 
             sku, 
             product_name, 
-            SUM(sales_volume) AS current_volume
+            SUM(sales_amount) AS current_amount
          FROM 
             sales_data
          WHERE 
@@ -173,7 +173,7 @@ def get_top_decreased_sales_volume(db, limit=5):
         (SELECT 
             sku, 
             product_name, 
-            SUM(sales_volume) AS previous_volume
+            SUM(sales_amount) AS previous_amount
          FROM 
             sales_data
          WHERE 
@@ -183,9 +183,9 @@ def get_top_decreased_sales_volume(db, limit=5):
     ON 
         t1.sku = t2.sku
     WHERE
-        t1.current_volume < t2.previous_volume
+        t1.current_amount < t2.previous_amount
     ORDER BY 
-        volume_decrease DESC
+        amount_decrease DESC
     LIMIT :limit
     """
     
@@ -198,7 +198,7 @@ def get_top_decreased_sales_volume(db, limit=5):
             "product_name": row[1],
             "current_value": float(row[2]) if row[2] is not None else 0.0,
             "previous_value": float(row[3]) if row[3] is not None else 0.0,
-            "volume_decrease": float(row[4]) if row[4] is not None else 0.0,  # 确保这是正确的下降量
+            "amount_decrease": float(row[4]) if row[4] is not None else 0.0,  # 确保这是正确的下降量
             "change_rate": float(row[5]) if row[5] is not None else 0.0
         }
         for row in results
@@ -329,8 +329,8 @@ def get_data_for_ai_analysis(db):
     top_sales = get_top_sales_amount(db, limit=5)
     
     # 获取环比增长和下降数据
-    increased = get_top_increased_sales_volume(db, limit=5)
-    decreased = get_top_decreased_sales_volume(db, limit=5)
+    increased = get_top_increased_sales_amount(db, limit=5)
+    decreased = get_top_decreased_sales_amount(db, limit=5)
     
     # 获取国家分布
     country_distribution = get_country_sales_distribution(db)

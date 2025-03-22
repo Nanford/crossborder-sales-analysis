@@ -15,7 +15,7 @@ from sqlalchemy import func, distinct
 from datetime import datetime, timedelta
 import asyncio
 
-app = FastAPI(title="跨境电商销售数据分析看板")
+app = FastAPI(title="跨境电商销售数据分析看板", root_path="/api")
 
 # 设置上传目录
 UPLOAD_DIR = "uploads"
@@ -132,14 +132,14 @@ def get_top_sales_amount(week: Optional[str] = None, db: Session = Depends(get_d
 
 @app.get("/analysis/top-increased/", response_model=List[schemas.ComparisonAnalysis])
 def get_top_increased(db: Session = Depends(get_db)):
-    """获取环比销量上升Top5"""
-    result = models.get_top_increased_sales_volume(db, limit=5)
+    """获取环比销售额上升Top5"""
+    result = models.get_top_increased_sales_amount(db, limit=5)
     return result
 
 @app.get("/analysis/top-decreased/", response_model=List[schemas.ComparisonAnalysis])
 def get_top_decreased(db: Session = Depends(get_db)):
-    """获取环比销量下降Top5"""
-    result = models.get_top_decreased_sales_volume(db, limit=5)
+    """获取环比销售额下降Top5"""
+    result = models.get_top_decreased_sales_amount(db, limit=5)
     return result
 
 @app.get("/analysis/country-distribution/", response_model=List[schemas.CountryAnalysis])
@@ -350,7 +350,7 @@ def get_platform_detail(db: Session = Depends(get_db), week: Optional[str] = Non
     else:
         prev_query = prev_query.filter(models.SalesData.week == "上周")
     
-    prev_result = {r.platform: float(r.prev_sales_amount) for r in prev_query.group_by(models.SalesData.platform).all()}
+    prev_result = {r.platform: float(r.prev_sales_amount) if r.prev_sales_amount else 0 for r in prev_query.group_by(models.SalesData.platform).all()}
     
     # 格式化结果
     platform_details = []
@@ -365,13 +365,17 @@ def get_platform_detail(db: Session = Depends(get_db), week: Optional[str] = Non
             
         platform_details.append({
             "platform": r.platform,
-            "sales_amount": float(r.sales_amount),
-            "sales_volume": float(r.sales_volume),
-            "order_count": int(r.order_count),
+            "sales_amount": float(r.sales_amount) if r.sales_amount else 0,
+            "sales_volume": float(r.sales_volume) if r.sales_volume else 0,
+            "order_count": int(r.order_count) if r.order_count else 0,
             "previous_amount": prev_amount,
             "change_rate": round(change_rate, 2)
         })
     
+    # 如果没有数据，返回一个空数组
+    if not platform_details:
+        return []
+        
     # 按销售额排序
     platform_details.sort(key=lambda x: x["sales_amount"], reverse=True)
     
@@ -380,23 +384,28 @@ def get_platform_detail(db: Session = Depends(get_db), week: Optional[str] = Non
 @app.get("/analysis/platform-sales-distribution/")
 def get_platform_sales_distribution(db: Session = Depends(get_db), week: Optional[str] = None):
     """获取各平台销售占比数据"""
-    # 确定查询的时间范围
-    start_date, end_date = get_date_range_for_week(week)
-    
     # 查询平台销售数据
     query = db.query(
         models.SalesData.platform,
         func.sum(models.SalesData.sales_amount).label("total_sales")
     )
     
-    if start_date and end_date:
-        query = query.filter(models.SalesData.date.between(start_date, end_date))
+    # 如果指定了周次，按周次筛选
+    if week and week != 'all':
+        query = query.filter(models.SalesData.week == week)
+    else:
+        # 默认使用本周数据
+        query = query.filter(models.SalesData.week == "本周")
     
     result = query.group_by(models.SalesData.platform).all()
     
     # 转换为字典格式 {platform_name: sales_amount}
-    platform_sales = {r.platform: float(r.total_sales) for r in result if r.platform}
+    platform_sales = {r.platform: float(r.total_sales) if r.total_sales else 0 for r in result if r.platform}
     
+    # 如果没有数据，返回一个空字典
+    if not platform_sales:
+        return {}
+        
     return platform_sales
 
 
@@ -570,4 +579,4 @@ def get_date_range_for_week(week: Optional[str] = None):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000) 
+    uvicorn.run(app, host="0.0.0.0", port=8002) 
