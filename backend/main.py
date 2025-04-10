@@ -408,6 +408,16 @@ def get_platform_sales_distribution(db: Session = Depends(get_db), week: Optiona
         
     return platform_sales
 
+@app.get("/analysis/no-orders-this-week/", response_model=List[schemas.ProductAnalysis])
+def get_no_orders_this_week(db: Session = Depends(get_db)):
+    """获取上周有出单但本周没有出单的SKU"""
+    try:
+        result = models.get_no_orders_this_week(db, limit=5)
+        return result
+    except Exception as e:
+        print(f"获取上周有单本周无单SKU时出错: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"数据查询错误: {str(e)}")
+
 @app.get("/")
 def read_root():
     return {"message": "跨境电商销售数据分析系统 API 服务正在运行"}
@@ -582,4 +592,4 @@ def get_date_range_for_week(week: Optional[str] = None):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8002) 
+    uvicorn.run(app, host="0.0.0.0", port=8000) 

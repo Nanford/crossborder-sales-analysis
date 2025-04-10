@@ -345,3 +345,51 @@ def get_data_for_ai_analysis(db):
         "country_distribution": country_distribution,
         "platform_data": platform_data
     } 
+
+def get_no_orders_this_week(db, limit=5):
+    """获取上周有出单但本周没有出单的SKU，按上周销售额排序"""
+    query = """
+    SELECT 
+        t2.sku,
+        t2.product_name,
+        t2.sales_amount AS previous_amount
+    FROM 
+        (SELECT 
+            sku
+         FROM 
+            sales_data
+         WHERE 
+            week = '本周'
+         GROUP BY 
+            sku) AS t1
+    RIGHT JOIN 
+        (SELECT 
+            sku, 
+            product_name, 
+            SUM(sales_amount) AS sales_amount
+         FROM 
+            sales_data
+         WHERE 
+            week = '上周'
+         GROUP BY 
+            sku, product_name) AS t2
+    ON 
+        t1.sku = t2.sku
+    WHERE
+        t1.sku IS NULL
+    ORDER BY 
+        t2.sales_amount DESC
+    LIMIT :limit
+    """
+    
+    results = db.execute(text(query), {"limit": limit}).fetchall()
+    
+    # 转换为字典列表
+    return [
+        {
+            "sku": row[0],
+            "product_name": row[1],
+            "value": float(row[2]) if row[2] is not None else 0.0
+        }
+        for row in results
+    ]

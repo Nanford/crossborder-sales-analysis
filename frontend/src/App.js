@@ -21,12 +21,12 @@ const App = () => {
           <Menu
             theme="dark"
             mode="inline"
-            defaultSelectedKeys={['1']}
+            defaultSelectedKeys={['2']}
             items={[
               {
                 key: '1',
                 icon: <LineChartOutlined />,
-                label: <Link to="/dashboard">数据看板</Link>,
+                label: <Link to="/dashboard">周数据看板</Link>,
               },
               {
                 key: '2',
@@ -48,8 +48,8 @@ const App = () => {
               }}
             >
               <Routes>
-                <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/import" element={<DataImport />} />
+                <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
               </Routes>
             </div>

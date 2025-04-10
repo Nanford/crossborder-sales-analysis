@@ -21,7 +21,8 @@ const Dashboard = () => {
     platformComparison: {},
     platformDetail: [], // 新增平台详细数据
     salespersonComparison: [],
-    platformSalesDistribution: {} // 新增数据
+    platformSalesDistribution: {}, // 新增数据
+    noOrdersThisWeek: [] // 新增上周有单本周无单的SKU数据
   });
 
   // 颜色配置
@@ -51,6 +52,31 @@ const Dashboard = () => {
     }
   };
 
+  // 定义无单SKU表格列
+  const noOrdersThisWeekColumns = [
+    {
+      title: 'SKU',
+      dataIndex: 'sku',
+      key: 'sku',
+      width: '25%',
+      render: (text) => <span style={{ fontWeight: 'bold' }}>{text}</span>
+    },
+    {
+      title: '产品名称',
+      dataIndex: 'product_name',
+      key: 'product_name',
+      width: '55%',
+      render: (text) => <span>{text || '未命名产品'}</span>
+    },
+    {
+      title: '上周销售额',
+      dataIndex: 'value',
+      key: 'value',
+      width: '20%',
+      render: (value) => <span style={{ color: '#ff4d4f' }}>{formatNumber(value, true)}</span>
+    }
+  ];
+
   // 加载所有数据
   const loadAllData = async () => {
     setLoading(true);
@@ -78,7 +104,8 @@ const Dashboard = () => {
         platformComparisonRes,
         platformDetailRes,
         salespersonComparisonRes,
-        platformSalesDistributionRes // 新增API响应
+        platformSalesDistributionRes, // 新增API响应
+        noOrdersThisWeekRes // 新增无单SKU API响应
       ] = await Promise.all([
         axios.get(`http://localhost:8000/analysis/top-sales-volume/?week=${weekFilter === 'all' ? '' : weekFilter}`, axiosConfig),
         axios.get(`http://localhost:8000/analysis/top-sales-amount/?week=${weekFilter === 'all' ? '' : weekFilter}`, axiosConfig),
@@ -88,7 +115,8 @@ const Dashboard = () => {
         axios.get('http://localhost:8000/analysis/platform-comparison/', axiosConfig),
         axios.get('http://localhost:8000/analysis/platform-detail/', axiosConfig),
         axios.get('http://localhost:8000/analysis/salesperson-comparison/', axiosConfig),
-        axios.get('http://localhost:8000/analysis/platform-sales-distribution/', axiosConfig)
+        axios.get('http://localhost:8000/analysis/platform-sales-distribution/', axiosConfig),
+        axios.get('http://localhost:8000/analysis/no-orders-this-week/', axiosConfig) // 新增API请求
       ]);
       
       // 打印API响应状态和数据结构
@@ -119,7 +147,8 @@ const Dashboard = () => {
         platformComparison: platformComparisonRes.data || {},
         platformDetail: platformDetailRes.data || [],
         salespersonComparison: salespersonComparisonRes.data || [],
-        platformSalesDistribution: platformSalesDistributionRes.data || {}
+        platformSalesDistribution: platformSalesDistributionRes.data || {},
+        noOrdersThisWeek: noOrdersThisWeekRes.data || [] // 设置无单SKU数据
       });
     } catch (err) {
       console.error('加载数据时出错', err);
@@ -1650,6 +1679,29 @@ const safeFormat = (value, decimals = 2) => {
                   </>
                 ) : (
                   <Empty description="暂无销量数据" />
+                )}
+              </Card>
+            </Col>
+          </Row>
+          
+          {/* 新增：上周有单本周无单的SKU */}
+          <Row gutter={16} style={{ marginTop: 16, marginBottom: 24 }}>
+            <Col span={24}>
+              <Card title="上周有单本周无单的SKU Top5" className="dashboard-card">
+                {loading ? (
+                  <div className="loading-container">
+                    <Spin size="large" />
+                  </div>
+                ) : data.noOrdersThisWeek && data.noOrdersThisWeek.length > 0 ? (
+                  <Table
+                    dataSource={data.noOrdersThisWeek}
+                    columns={noOrdersThisWeekColumns}
+                    pagination={false}
+                    size="small"
+                    rowKey={(record, index) => `no-orders-${index}`}
+                  />
+                ) : (
+                  <Empty description="暂无上周有单本周无单的SKU数据" />
                 )}
               </Card>
             </Col>
