@@ -15,7 +15,7 @@ from sqlalchemy import func, distinct
 from datetime import datetime, timedelta
 import asyncio
 
-app = FastAPI(title="跨境电商销售数据分析看板", root_path="/api")
+app = FastAPI(title="跨境电商销售数据分析看板")
 
 # 设置上传目录
 UPLOAD_DIR = "uploads"
@@ -408,6 +408,9 @@ def get_platform_sales_distribution(db: Session = Depends(get_db), week: Optiona
         
     return platform_sales
 
+@app.get("/")
+def read_root():
+    return {"message": "跨境电商销售数据分析系统 API 服务正在运行"}
 
 def process_data(df):
     """处理和清洗上传的数据"""

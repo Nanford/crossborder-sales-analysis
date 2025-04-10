@@ -44,10 +44,11 @@ const Dashboard = () => {
       }).format(num);
     }
     
-    return new Intl.NumberFormat('en-US', {
-      maximumFractionDigits: 2,
-      minimumFractionDigits: 0
-    }).format(num);
+    if (num >= 1000) {
+      return `$${(num/1000).toFixed(1)}k`;
+    } else {
+      return `$${parseFloat(num).toFixed(2)}`; // 确保小于1000的值保留两位小数并正确解析
+    }
   };
 
   // 加载所有数据
@@ -273,7 +274,7 @@ const Dashboard = () => {
             if (params.value >= 1000) {
               return '$' + (params.value / 1000).toFixed(1) + 'k';
             }
-            return '$' + params.value;
+            return '$' + parseFloat(params.value).toFixed(2);
           }
         }
       }]
