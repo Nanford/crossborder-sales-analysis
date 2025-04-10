@@ -422,6 +422,88 @@ def get_no_orders_this_week(db: Session = Depends(get_db)):
 def read_root():
     return {"message": "跨境电商销售数据分析系统 API 服务正在运行"}
 
+# 获取可用月份列表
+@app.get("/analysis/available-months/")
+def get_months(db: Session = Depends(get_db)):
+    """获取所有可用的月份"""
+    try:
+        months = models.get_available_months(db)
+        return months
+    except Exception as e:
+        print(f"获取月份列表时出错: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"数据查询错误: {str(e)}")
+
+# 月度数据API端点
+@app.get("/analysis/month-top-sales-volume/")
+def get_month_top_sales_volume(month: Optional[str] = None, db: Session = Depends(get_db)):
+    """获取月度销量Top10"""
+    try:
+        result = models.get_month_top_sales_volume(db, month=month, limit=10)
+        return result
+    except Exception as e:
+        print(f"获取月度销量Top10时出错: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"数据查询错误: {str(e)}")
+
+@app.get("/analysis/month-top-sales-amount/")
+def get_month_top_sales_amount(month: Optional[str] = None, db: Session = Depends(get_db)):
+    """获取月度销售额Top10"""
+    try:
+        result = models.get_month_top_sales_amount(db, month=month, limit=10)
+        return result
+    except Exception as e:
+        print(f"获取月度销售额Top10时出错: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"数据查询错误: {str(e)}")
+
+@app.get("/analysis/month-top-increased/")
+def get_month_top_increased(current_month: Optional[str] = None, previous_month: Optional[str] = None, db: Session = Depends(get_db)):
+    """获取月度环比销量上升Top10"""
+    try:
+        result = models.get_month_top_increased_sales_volume(db, current_month=current_month, previous_month=previous_month, limit=10)
+        return result
+    except Exception as e:
+        print(f"获取月度环比销量上升Top10时出错: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"数据查询错误: {str(e)}")
+
+@app.get("/analysis/month-top-decreased/")
+def get_month_top_decreased(current_month: Optional[str] = None, previous_month: Optional[str] = None, db: Session = Depends(get_db)):
+    """获取月度环比销量下降Top10"""
+    try:
+        result = models.get_month_top_decreased_sales_volume(db, current_month=current_month, previous_month=previous_month, limit=10)
+        return result
+    except Exception as e:
+        print(f"获取月度环比销量下降Top10时出错: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"数据查询错误: {str(e)}")
+
+@app.get("/analysis/month-country-distribution/")
+def get_month_country_distribution(current_month: Optional[str] = None, previous_month: Optional[str] = None, db: Session = Depends(get_db)):
+    """获取月度国家销售额分布"""
+    try:
+        result = models.get_month_country_sales_distribution(db, current_month=current_month, previous_month=previous_month)
+        return result
+    except Exception as e:
+        print(f"获取月度国家销售额分布时出错: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"数据查询错误: {str(e)}")
+
+@app.get("/analysis/month-platform-comparison/")
+def get_month_platform_comparison(current_month: Optional[str] = None, previous_month: Optional[str] = None, db: Session = Depends(get_db)):
+    """获取月度平台销售数据环比"""
+    try:
+        result = models.get_month_platform_comparison(db, current_month=current_month, previous_month=previous_month)
+        return result
+    except Exception as e:
+        print(f"获取月度平台销售数据环比时出错: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"数据查询错误: {str(e)}")
+
+@app.get("/analysis/month-salesperson-comparison/")
+def get_month_salesperson_comparison(current_month: Optional[str] = None, previous_month: Optional[str] = None, db: Session = Depends(get_db)):
+    """获取月度销售人员数据环比"""
+    try:
+        result = models.get_month_salesperson_comparison(db, current_month=current_month, previous_month=previous_month)
+        return result
+    except Exception as e:
+        print(f"获取月度销售人员数据环比时出错: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"数据查询错误: {str(e)}")
+
 def process_data(df):
     """处理和清洗上传的数据"""
     # 表头映射

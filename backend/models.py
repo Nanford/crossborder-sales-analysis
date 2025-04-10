@@ -393,3 +393,492 @@ def get_no_orders_this_week(db, limit=5):
         }
         for row in results
     ]
+
+def get_month_top_sales_volume(db, month=None, limit=10):
+    """获取月度销量Top10"""
+    query = db.query(
+        SalesData.sku,
+        SalesData.product_name,
+        func.sum(SalesData.sales_volume).label('total_sales_volume')
+    )
+    
+    if month:
+        query = query.filter(SalesData.month == month)
+    
+    results = query.group_by(
+        SalesData.sku,
+        SalesData.product_name
+    ).order_by(text('total_sales_volume DESC')).limit(limit).all()
+    
+    # 转换为字典列表
+    return [
+        {
+            "sku": row.sku,
+            "product_name": row.product_name,
+            "value": float(row.total_sales_volume)
+        }
+        for row in results
+    ]
+
+def get_month_top_sales_amount(db, month=None, limit=10):
+    """获取月度销售额Top10"""
+    query = db.query(
+        SalesData.sku,
+        SalesData.product_name,
+        func.sum(SalesData.sales_amount).label('total_sales_amount')
+    )
+    
+    if month:
+        query = query.filter(SalesData.month == month)
+    
+    results = query.group_by(
+        SalesData.sku,
+        SalesData.product_name
+    ).order_by(text('total_sales_amount DESC')).limit(limit).all()
+    
+    # 转换为字典列表
+    return [
+        {
+            "sku": row.sku,
+            "product_name": row.product_name,
+            "value": float(row.total_sales_amount)
+        }
+        for row in results
+    ]
+
+def get_month_top_increased_sales_volume(db, current_month=None, previous_month=None, limit=10):
+    """获取月度环比销量上升Top10"""
+    if not current_month or not previous_month:
+        # 获取所有月份并按降序排列
+        all_months = db.query(SalesData.month).distinct().order_by(SalesData.month.desc()).all()
+        months = [m[0] for m in all_months if m[0]]
+        
+        if len(months) >= 2:
+            current_month = months[0]
+            previous_month = months[1]
+        else:
+            return []  # 没有足够的月份数据进行比较
+    
+    query = """
+    SELECT 
+        t1.sku,
+        t1.product_name,
+        t1.current_volume,
+        t2.previous_volume,
+        (t1.current_volume - t2.previous_volume) AS volume_change,
+        CASE 
+            WHEN t2.previous_volume > 0 THEN 
+                ((t1.current_volume - t2.previous_volume) / t2.previous_volume) * 100
+            ELSE 0
+        END AS change_rate
+    FROM 
+        (SELECT 
+            sku, 
+            product_name, 
+            SUM(sales_volume) AS current_volume
+         FROM 
+            sales_data
+         WHERE 
+            month = :current_month
+         GROUP BY 
+            sku, product_name) AS t1
+    JOIN 
+        (SELECT 
+            sku, 
+            product_name, 
+            SUM(sales_volume) AS previous_volume
+         FROM 
+            sales_data
+         WHERE 
+            month = :previous_month
+         GROUP BY 
+            sku, product_name) AS t2
+    ON 
+        t1.sku = t2.sku
+    WHERE
+        t1.current_volume > t2.previous_volume
+    ORDER BY 
+        volume_change DESC
+    LIMIT :limit
+    """
+    
+    results = db.execute(text(query), {
+        "current_month": current_month,
+        "previous_month": previous_month,
+        "limit": limit
+    }).fetchall()
+    
+    return [
+        {
+            "sku": row[0],
+            "product_name": row[1],
+            "current_value": float(row[2]) if row[2] is not None else 0.0,
+            "previous_value": float(row[3]) if row[3] is not None else 0.0,
+            "amount_change": float(row[4]) if row[4] is not None else 0.0,
+            "change_rate": float(row[5]) if row[5] is not None else 0.0
+        }
+        for row in results
+    ]
+
+def get_month_top_decreased_sales_volume(db, current_month=None, previous_month=None, limit=10):
+    """获取月度环比销量下降Top10"""
+    if not current_month or not previous_month:
+        # 获取所有月份并按降序排列
+        all_months = db.query(SalesData.month).distinct().order_by(SalesData.month.desc()).all()
+        months = [m[0] for m in all_months if m[0]]
+        
+        if len(months) >= 2:
+            current_month = months[0]
+            previous_month = months[1]
+        else:
+            return []  # 没有足够的月份数据进行比较
+    
+    query = """
+    SELECT 
+        t1.sku,
+        t1.product_name,
+        t1.current_volume,
+        t2.previous_volume,
+        (t2.previous_volume - t1.current_volume) AS volume_decrease,
+        CASE 
+            WHEN t2.previous_volume > 0 THEN 
+                ((t1.current_volume - t2.previous_volume) / t2.previous_volume) * 100
+            ELSE 0
+        END AS change_rate
+    FROM 
+        (SELECT 
+            sku, 
+            product_name, 
+            SUM(sales_volume) AS current_volume
+         FROM 
+            sales_data
+         WHERE 
+            month = :current_month
+         GROUP BY 
+            sku, product_name) AS t1
+    JOIN 
+        (SELECT 
+            sku, 
+            product_name, 
+            SUM(sales_volume) AS previous_volume
+         FROM 
+            sales_data
+         WHERE 
+            month = :previous_month
+         GROUP BY 
+            sku, product_name) AS t2
+    ON 
+        t1.sku = t2.sku
+    WHERE
+        t1.current_volume < t2.previous_volume
+    ORDER BY 
+        volume_decrease DESC
+    LIMIT :limit
+    """
+    
+    results = db.execute(text(query), {
+        "current_month": current_month,
+        "previous_month": previous_month,
+        "limit": limit
+    }).fetchall()
+    
+    return [
+        {
+            "sku": row[0],
+            "product_name": row[1],
+            "current_value": float(row[2]) if row[2] is not None else 0.0,
+            "previous_value": float(row[3]) if row[3] is not None else 0.0,
+            "amount_change": float(row[4]) if row[4] is not None else 0.0,
+            "change_rate": float(row[5]) if row[5] is not None else 0.0
+        }
+        for row in results
+    ]
+
+def get_month_country_sales_distribution(db, current_month=None, previous_month=None):
+    """获取月度国家销售额分布与环比"""
+    if not current_month or not previous_month:
+        # 获取所有月份并按降序排列
+        all_months = db.query(SalesData.month).distinct().order_by(SalesData.month.desc()).all()
+        months = [m[0] for m in all_months if m[0]]
+        
+        if len(months) >= 2:
+            current_month = months[0]
+            previous_month = months[1]
+        else:
+            return []  # 没有足够的月份数据进行比较
+    
+    # 当前月销售额
+    current_query = db.query(
+        SalesData.buyer_country,
+        func.sum(SalesData.sales_amount).label('total_amount')
+    ).filter(
+        SalesData.month == current_month
+    ).group_by(
+        SalesData.buyer_country
+    ).order_by(text('total_amount DESC')).all()
+    
+    # 上月销售额
+    previous_query = db.query(
+        SalesData.buyer_country,
+        func.sum(SalesData.sales_amount).label('total_amount')
+    ).filter(
+        SalesData.month == previous_month
+    ).group_by(
+        SalesData.buyer_country
+    ).all()
+    
+    # 转换为字典 {country: amount}
+    previous_data = {row.buyer_country: float(row.total_amount) for row in previous_query if row.buyer_country}
+    
+    # 计算环比
+    result = []
+    for row in current_query:
+        if not row.buyer_country:
+            continue
+            
+        current_amount = float(row.total_amount) if row.total_amount else 0
+        previous_amount = previous_data.get(row.buyer_country, 0)
+        
+        # 计算环比变化率
+        change_rate = 0
+        if previous_amount > 0:
+            change_rate = (current_amount - previous_amount) / previous_amount * 100
+        
+        result.append({
+            "country": row.buyer_country,
+            "value": current_amount,
+            "previous_value": previous_amount,
+            "change_rate": round(change_rate, 2)
+        })
+    
+    return result
+
+def get_month_platform_comparison(db, current_month=None, previous_month=None):
+    """获取月度平台销售数据环比"""
+    if not current_month or not previous_month:
+        # 获取所有月份并按降序排列
+        all_months = db.query(SalesData.month).distinct().order_by(SalesData.month.desc()).all()
+        months = [m[0] for m in all_months if m[0]]
+        
+        if len(months) >= 2:
+            current_month = months[0]
+            previous_month = months[1]
+        else:
+            return {"current": {}, "previous": {}, "platforms": []}  # 没有足够的月份数据
+    
+    # 当前月平台数据
+    current_query = db.query(
+        SalesData.platform,
+        func.sum(SalesData.sales_amount).label('sales_amount'),
+        func.sum(SalesData.sales_volume).label('sales_volume'),
+        func.sum(SalesData.order_count).label('order_count'),
+        func.sum(SalesData.profit).label('profit')
+    ).filter(
+        SalesData.month == current_month
+    ).group_by(
+        SalesData.platform
+    ).all()
+    
+    # 上月平台数据
+    previous_query = db.query(
+        SalesData.platform,
+        func.sum(SalesData.sales_amount).label('sales_amount'),
+        func.sum(SalesData.sales_volume).label('sales_volume'),
+        func.sum(SalesData.order_count).label('order_count'),
+        func.sum(SalesData.profit).label('profit')
+    ).filter(
+        SalesData.month == previous_month
+    ).group_by(
+        SalesData.platform
+    ).all()
+    
+    # 汇总当前月数据
+    current_data = {}
+    for row in current_query:
+        if not row.platform:
+            continue
+            
+        platform = row.platform
+        sales_amount = float(row.sales_amount) if row.sales_amount else 0
+        sales_volume = float(row.sales_volume) if row.sales_volume else 0
+        order_count = int(row.order_count) if row.order_count else 0
+        profit = float(row.profit) if row.profit else 0
+        
+        # 计算毛利率
+        profit_rate = 0
+        if sales_amount > 0:
+            profit_rate = (profit / sales_amount) * 100
+        
+        current_data[platform] = {
+            "sales_amount": sales_amount,
+            "sales_volume": sales_volume,
+            "order_count": order_count,
+            "profit_rate": round(profit_rate, 2)
+        }
+    
+    # 汇总上月数据
+    previous_data = {}
+    for row in previous_query:
+        if not row.platform:
+            continue
+            
+        platform = row.platform
+        sales_amount = float(row.sales_amount) if row.sales_amount else 0
+        sales_volume = float(row.sales_volume) if row.sales_volume else 0
+        order_count = int(row.order_count) if row.order_count else 0
+        profit = float(row.profit) if row.profit else 0
+        
+        # 计算毛利率
+        profit_rate = 0
+        if sales_amount > 0:
+            profit_rate = (profit / sales_amount) * 100
+        
+        previous_data[platform] = {
+            "sales_amount": sales_amount,
+            "sales_volume": sales_volume,
+            "order_count": order_count,
+            "profit_rate": round(profit_rate, 2)
+        }
+    
+    # 获取所有平台
+    all_platforms = set(list(current_data.keys()) + list(previous_data.keys()))
+    
+    return {
+        "current": current_data,
+        "previous": previous_data,
+        "platforms": list(all_platforms)
+    }
+
+def get_month_salesperson_comparison(db, current_month=None, previous_month=None):
+    """获取月度销售人员数据环比"""
+    if not current_month or not previous_month:
+        # 获取所有月份并按降序排列
+        all_months = db.query(SalesData.month).distinct().order_by(SalesData.month.desc()).all()
+        months = [m[0] for m in all_months if m[0]]
+        
+        if len(months) >= 2:
+            current_month = months[0]
+            previous_month = months[1]
+        else:
+            return []  # 没有足够的月份数据
+    
+    # 当前月销售人员数据
+    current_query = db.query(
+        SalesData.sales_person,
+        func.sum(SalesData.sales_amount).label('sales_amount'),
+        func.sum(SalesData.sales_volume).label('sales_volume'),
+        func.sum(SalesData.order_count).label('order_count'),
+        func.sum(SalesData.profit).label('profit')
+    ).filter(
+        SalesData.month == current_month
+    ).group_by(
+        SalesData.sales_person
+    ).all()
+    
+    # 上月销售人员数据
+    previous_query = db.query(
+        SalesData.sales_person,
+        func.sum(SalesData.sales_amount).label('sales_amount'),
+        func.sum(SalesData.sales_volume).label('sales_volume'),
+        func.sum(SalesData.order_count).label('order_count'),
+        func.sum(SalesData.profit).label('profit')
+    ).filter(
+        SalesData.month == previous_month
+    ).group_by(
+        SalesData.sales_person
+    ).all()
+    
+    # 将上月数据转换为字典 {sales_person: data}
+    previous_data = {}
+    for row in previous_query:
+        if not row.sales_person:
+            continue
+            
+        sales_person = row.sales_person
+        sales_amount = float(row.sales_amount) if row.sales_amount else 0
+        sales_volume = float(row.sales_volume) if row.sales_volume else 0
+        order_count = int(row.order_count) if row.order_count else 0
+        profit = float(row.profit) if row.profit else 0
+        
+        # 计算毛利率
+        profit_rate = 0
+        if sales_amount > 0:
+            profit_rate = (profit / sales_amount) * 100
+        
+        previous_data[sales_person] = {
+            "sales_amount": sales_amount,
+            "sales_volume": sales_volume,
+            "order_count": order_count,
+            "profit_rate": round(profit_rate, 2)
+        }
+    
+    # 整合数据并计算环比
+    result = []
+    for row in current_query:
+        if not row.sales_person:
+            continue
+            
+        sales_person = row.sales_person
+        current_amount = float(row.sales_amount) if row.sales_amount else 0
+        current_volume = float(row.sales_volume) if row.sales_volume else 0
+        current_orders = int(row.order_count) if row.order_count else 0
+        current_profit = float(row.profit) if row.profit else 0
+        
+        # 计算当前毛利率
+        current_profit_rate = 0
+        if current_amount > 0:
+            current_profit_rate = (current_profit / current_amount) * 100
+        
+        # 获取上月数据
+        prev_data = previous_data.get(sales_person, {})
+        previous_amount = prev_data.get("sales_amount", 0)
+        previous_volume = prev_data.get("sales_volume", 0)
+        previous_orders = prev_data.get("order_count", 0)
+        previous_profit_rate = prev_data.get("profit_rate", 0)
+        
+        # 计算环比变化率
+        amount_change_rate = 0
+        if previous_amount > 0:
+            amount_change_rate = (current_amount - previous_amount) / previous_amount * 100
+            
+        volume_change_rate = 0
+        if previous_volume > 0:
+            volume_change_rate = (current_volume - previous_volume) / previous_volume * 100
+            
+        orders_change_rate = 0
+        if previous_orders > 0:
+            orders_change_rate = (current_orders - previous_orders) / previous_orders * 100
+            
+        profit_rate_change = current_profit_rate - previous_profit_rate
+        
+        result.append({
+            "sales_person": sales_person,
+            "sales_amount": current_amount,
+            
+            "current_amount": current_amount,
+            "previous_amount": previous_amount,
+            "amount_change_rate": round(amount_change_rate, 2),
+            
+            "current_volume": current_volume,
+            "previous_volume": previous_volume,
+            "volume_change_rate": round(volume_change_rate, 2),
+            
+            "current_orders": current_orders,
+            "previous_orders": previous_orders,
+            "orders_change_rate": round(orders_change_rate, 2),
+            
+            "current_profit_rate": round(current_profit_rate, 2),
+            "previous_profit_rate": round(previous_profit_rate, 2),
+            "profit_rate_change": round(profit_rate_change, 2)
+        })
+    
+    # 按销售额排序
+    result.sort(key=lambda x: x["sales_amount"], reverse=True)
+    
+    return result
+
+def get_available_months(db):
+    """获取所有可用的月份"""
+    result = db.query(SalesData.month).distinct().order_by(SalesData.month.desc()).all()
+    months = [row[0] for row in result if row[0]]
+    return months

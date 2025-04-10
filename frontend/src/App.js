@@ -1,9 +1,10 @@
 import React from 'react';
 import { Layout, Menu, theme } from 'antd';
-import { DatabaseOutlined, LineChartOutlined, UploadOutlined } from '@ant-design/icons';
+import { DatabaseOutlined, LineChartOutlined, UploadOutlined, CalendarOutlined } from '@ant-design/icons';
 import { BrowserRouter as Router, Route, Routes, Link, Navigate } from 'react-router-dom';
 import Dashboard from './components/Dashboard';
 import DataImport from './components/DataImport';
+import MonthlyDashboard from './components/MonthlyDashboard';
 import DebugHelper from './components/DebugHelper';
 
 const { Header, Content, Footer, Sider } = Layout;
@@ -21,15 +22,20 @@ const App = () => {
           <Menu
             theme="dark"
             mode="inline"
-            defaultSelectedKeys={['2']}
+            defaultSelectedKeys={['1']}
             items={[
               {
                 key: '1',
                 icon: <LineChartOutlined />,
-                label: <Link to="/dashboard">周数据看板</Link>,
+                label: <Link to="/dashboard">周报数据看板</Link>,
               },
               {
                 key: '2',
+                icon: <CalendarOutlined />,
+                label: <Link to="/monthly">月报数据看板</Link>,
+              },
+              {
+                key: '3',
                 icon: <UploadOutlined />,
                 label: <Link to="/import">数据导入</Link>,
               },
@@ -50,6 +56,7 @@ const App = () => {
               <Routes>
                 <Route path="/import" element={<DataImport />} />
                 <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/monthly" element={<MonthlyDashboard />} />
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
               </Routes>
             </div>
