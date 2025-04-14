@@ -3,6 +3,7 @@ import { Row, Col, Card, Table, Spin, Empty, Select, Typography, Statistic, Divi
 import { ArrowUpOutlined, ArrowDownOutlined, ReloadOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import ReactECharts from 'echarts-for-react';
+import ReactMarkdown from 'react-markdown';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -13,6 +14,9 @@ const MonthlyDashboard = () => {
   const [availableMonths, setAvailableMonths] = useState([]);
   const [currentMonth, setCurrentMonth] = useState('');
   const [previousMonth, setPreviousMonth] = useState('');
+  const [aiAnalysisLoading, setAiAnalysisLoading] = useState(false);
+  const [aiAnalysisError, setAiAnalysisError] = useState(null);
+  const [aiAnalysisResult, setAiAnalysisResult] = useState('');
   const [data, setData] = useState({
     topSalesVolume: [],
     topSalesAmount: [],
@@ -157,6 +161,48 @@ const MonthlyDashboard = () => {
     loadAllData();
   };
 
+  // 生成AI分析
+  const generateAIAnalysis = async () => {
+    if (!currentMonth || !previousMonth) {
+      setAiAnalysisError('请先选择要对比的月份');
+      return;
+    }
+
+    setAiAnalysisLoading(true);
+    setAiAnalysisError(null);
+    
+    try {
+      // 准备要发送给AI分析服务的数据
+      const analysisData = {
+        top_sales_amount: data.topSalesAmount,
+        top_increased: data.topIncreased,
+        top_decreased: data.topDecreased,
+        country_distribution: data.countryDistribution,
+        platform_comparison: data.platformComparison,
+        salesperson_comparison: data.salespersonComparison
+      };
+      
+      const response = await axios.post('http://localhost:8000/analysis/generate-monthly-ai-analysis/', analysisData, {
+        timeout: 180000, // 3分钟超时
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (response.data && response.data.analysis) {
+        setAiAnalysisResult(response.data.analysis);
+      } else {
+        setAiAnalysisError('AI分析生成失败，服务器返回空数据');
+      }
+    } catch (err) {
+      console.error('生成AI分析时出错', err);
+      setAiAnalysisError(`AI分析生成失败: ${err.message || '未知错误'}`);
+    } finally {
+      setAiAnalysisLoading(false);
+    }
+  };
+
   // 销量Top10柱状图配置
   const getTopSalesVolumeOption = () => {
     if (!data.topSalesVolume || data.topSalesVolume.length === 0) {
@@ -281,7 +327,7 @@ const MonthlyDashboard = () => {
   // 环比销量上升Top10柱状图配置
   const getTopIncreasedOption = () => {
     if (!data.topIncreased || data.topIncreased.length === 0) {
-      return { title: { text: '环比销量上升Top10' } };
+      return { title: { text: '环比销售额上升Top10' } };
     }
 
     // 数据准备 - 截断产品名称
@@ -303,7 +349,7 @@ const MonthlyDashboard = () => {
           // 显示完整产品名称和环比变化率
           const index = params[0].dataIndex;
           return `${originalNames[index]}<br/>
-                  增长量: ${params[0].value}<br/>
+                  销售额增长: ${formatNumber(params[0].value, true)}<br/>
                   增长率: ${changeRates[index].toFixed(2)}%`;
         }
       },
@@ -324,7 +370,7 @@ const MonthlyDashboard = () => {
       },
       yAxis: { type: 'value' },
       series: [{
-        name: '增长量',
+        name: '销售额增长',
         type: 'bar',
         data: yData,
         itemStyle: {
@@ -335,7 +381,7 @@ const MonthlyDashboard = () => {
           position: 'top',
           formatter: function(params) {
             const index = params.dataIndex;
-            return `+${params.value.toFixed(0)} (${changeRates[index].toFixed(0)}%)`;
+            return `+${formatNumber(params.value)}`;
           }
         }
       }]
@@ -345,7 +391,7 @@ const MonthlyDashboard = () => {
   // 环比销量下降Top10柱状图配置
   const getTopDecreasedOption = () => {
     if (!data.topDecreased || data.topDecreased.length === 0) {
-      return { title: { text: '环比销量下降Top10' } };
+      return { title: { text: '环比销售额下降Top10' } };
     }
 
     // 数据准备 - 截断产品名称
@@ -367,7 +413,7 @@ const MonthlyDashboard = () => {
           // 显示完整产品名称和环比变化率
           const index = params[0].dataIndex;
           return `${originalNames[index]}<br/>
-                  下降量: ${params[0].value}<br/>
+                  销售额下降: ${formatNumber(params[0].value, true)}<br/>
                   下降率: ${Math.abs(changeRates[index]).toFixed(2)}%`;
         }
       },
@@ -388,7 +434,7 @@ const MonthlyDashboard = () => {
       },
       yAxis: { type: 'value' },
       series: [{
-        name: '下降量',
+        name: '销售额下降',
         type: 'bar',
         data: yData,
         itemStyle: {
@@ -399,7 +445,7 @@ const MonthlyDashboard = () => {
           position: 'top',
           formatter: function(params) {
             const index = params.dataIndex;
-            return `${params.value.toFixed(0)} (${changeRates[index].toFixed(0)}%)`;
+            return `${formatNumber(params.value)}`;
           }
         }
       }]
@@ -514,6 +560,52 @@ const MonthlyDashboard = () => {
       ]
     };
   };
+
+  // 销量Top10表格配置
+  const salesVolumeColumns = [
+    {
+      title: 'SKU',
+      dataIndex: 'sku',
+      key: 'sku',
+      width: 100
+    },
+    {
+      title: '商品名称',
+      dataIndex: 'product_name',
+      key: 'product_name',
+      ellipsis: true,
+    },
+    {
+      title: '销量',
+      dataIndex: 'value',
+      key: 'value',
+      render: (val) => Math.round(val || 0),
+      width: 100
+    }
+  ];
+
+  // 销售额Top10表格配置
+  const salesAmountColumns = [
+    {
+      title: 'SKU',
+      dataIndex: 'sku',
+      key: 'sku',
+      width: 100
+    },
+    {
+      title: '商品名称',
+      dataIndex: 'product_name',
+      key: 'product_name',
+      ellipsis: true,
+    },
+    {
+      title: '销售额',
+      dataIndex: 'value',
+      key: 'value',
+      render: (val) => formatNumber(val, true),
+      width: 120
+    }
+  ];
 
   // 平台环比对比雷达图配置
   const getPlatformRadarOption = () => {
@@ -776,18 +868,40 @@ const MonthlyDashboard = () => {
             {/* 行1：销量Top10和销售额Top10 */}
             <Row gutter={[16, 16]}>
               <Col span={12}>
-                <Card title="月度销量Top10">
+                <Card title="月度商品销量Top10">
                   {data.topSalesVolume && data.topSalesVolume.length > 0 ? (
-                    <ReactECharts option={getTopSalesVolumeOption()} style={{ height: 400 }} />
+                    <>
+                      <ReactECharts option={getTopSalesVolumeOption()} style={{ height: 300 }} />
+                      <div style={{ marginTop: 16 }}>
+                        <Table
+                          dataSource={data.topSalesVolume}
+                          columns={salesVolumeColumns}
+                          pagination={false}
+                          size="small"
+                          rowKey={(record, index) => `sales-volume-${index}`}
+                        />
+                      </div>
+                    </>
                   ) : (
                     <Empty description="暂无数据" />
                   )}
                 </Card>
               </Col>
               <Col span={12}>
-                <Card title="月度销售额Top10">
+                <Card title="月度商品销售额Top10">
                   {data.topSalesAmount && data.topSalesAmount.length > 0 ? (
-                    <ReactECharts option={getTopSalesAmountOption()} style={{ height: 400 }} />
+                    <>
+                      <ReactECharts option={getTopSalesAmountOption()} style={{ height: 300 }} />
+                      <div style={{ marginTop: 16 }}>
+                        <Table
+                          dataSource={data.topSalesAmount}
+                          columns={salesAmountColumns}
+                          pagination={false}
+                          size="small"
+                          rowKey={(record, index) => `sales-amount-${index}`}
+                        />
+                      </div>
+                    </>
                   ) : (
                     <Empty description="暂无数据" />
                   )}
@@ -795,10 +909,10 @@ const MonthlyDashboard = () => {
               </Col>
             </Row>
 
-            {/* 行2：环比销量上升和下降Top10 */}
+            {/* 行2：环比销售额上升和下降Top10 */}
             <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
               <Col span={12}>
-                <Card title="月度环比销量上升Top10">
+                <Card title="月度环比销售额上升Top10">
                   {data.topIncreased && data.topIncreased.length > 0 ? (
                     <ReactECharts option={getTopIncreasedOption()} style={{ height: 400 }} />
                   ) : (
@@ -807,7 +921,7 @@ const MonthlyDashboard = () => {
                 </Card>
               </Col>
               <Col span={12}>
-                <Card title="月度环比销量下降Top10">
+                <Card title="月度环比销售额下降Top10">
                   {data.topDecreased && data.topDecreased.length > 0 ? (
                     <ReactECharts option={getTopDecreasedOption()} style={{ height: 400 }} />
                   ) : (
@@ -871,8 +985,95 @@ const MonthlyDashboard = () => {
                 </Card>
               </Col>
             </Row>
+
+            {/* 行6：AI分析报告 */}
+            <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+              <Col span={24}>
+                <Card 
+                  title="AI月度销售数据分析" 
+                  extra={
+                    <Button 
+                      type="primary" 
+                      onClick={generateAIAnalysis} 
+                      loading={aiAnalysisLoading}
+                      disabled={loading || !currentMonth || !previousMonth}
+                    >
+                      生成AI分析
+                    </Button>
+                  }
+                >
+                  {aiAnalysisError && (
+                    <Alert
+                      message="AI分析生成错误"
+                      description={aiAnalysisError}
+                      type="error"
+                      closable
+                      style={{ marginBottom: 16 }}
+                    />
+                  )}
+                  
+                  {aiAnalysisLoading ? (
+                    <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                      <Spin tip="正在生成AI分析，这可能需要一些时间..." />
+                    </div>
+                  ) : aiAnalysisResult ? (
+                    <div 
+                      className="markdown-content" 
+                      style={{
+                        padding: '0 16px',
+                        maxHeight: '600px',
+                        overflow: 'auto'
+                      }}
+                    >
+                      <ReactMarkdown>
+                        {aiAnalysisResult}
+                      </ReactMarkdown>
+                    </div>
+                  ) : (
+                    <Empty 
+                      description={
+                        <span>
+                          点击"生成AI分析"按钮，获取基于当前数据的智能分析报告
+                        </span>
+                      }
+                    />
+                  )}
+                </Card>
+              </Col>
+            </Row>
           </div>
         </Spin>
+
+        {/* 添加markdown内容的样式 */}
+        <style jsx="true">{`
+          .markdown-content h1 {
+            font-size: 1.8em;
+            margin-top: 1em;
+            margin-bottom: 0.5em;
+          }
+          .markdown-content h2 {
+            font-size: 1.5em;
+            margin-top: 0.8em;
+            margin-bottom: 0.4em;
+          }
+          .markdown-content h3 {
+            font-size: 1.2em;
+            margin-top: 0.6em;
+            margin-bottom: 0.3em;
+          }
+          .markdown-content p {
+            margin-bottom: 0.8em;
+            line-height: 1.6;
+          }
+          .markdown-content ul, .markdown-content ol {
+            margin-left: 2em;
+            margin-bottom: 1em;
+          }
+          .markdown-content strong {
+            font-weight: 600;
+            color: #1890ff;
+          }
+        `}</style>
       </div>
     </div>
   );

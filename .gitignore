@@ -2,6 +2,7 @@
 /frontend/node_modules
 /.pnp
 .pnp.js
+/backend/venv
 
 # 测试覆盖率
 /coverage

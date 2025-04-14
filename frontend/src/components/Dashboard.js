@@ -1342,7 +1342,7 @@ const Dashboard = () => {
       title: '销量',
       dataIndex: 'value',
       key: 'value',
-      render: (val) => formatNumber(val),
+      render: (val) => Math.round(val || 0),
       width: 100
     }
   ];

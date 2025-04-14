@@ -303,15 +303,40 @@ async def ai_analysis(request: AnalysisRequest):
         print(f"AI分析错误: {error_detail}")
         raise HTTPException(status_code=500, detail=f"生成AI分析失败: {str(e)}")
 
-async def generate_analysis_with_timeout(request):
-    # 将同步函数包装成异步执行
-    return ai_service.generate_analysis(
-        {
+# 添加月度AI分析端点
+@app.post("/analysis/generate-monthly-ai-analysis/")
+async def monthly_ai_analysis(request: AnalysisRequest):
+    """生成月度AI销售数据分析"""
+    try:
+        print(f"收到月度AI分析请求，数据: {request}")
+        
+        # 将请求数据转换为字典
+        request_data = {
             "top_sales": request.top_sales_amount,
             "top_increased": request.top_increased,
             "top_decreased": request.top_decreased,
             "country_distribution": request.country_distribution,
             "platform_data": request.platform_comparison
+        }
+        
+        # 调用AI服务生成月度分析
+        analysis = ai_service.generate_monthly_analysis(request_data)
+        return {"analysis": analysis}
+    except Exception as e:
+        print(f"生成月度AI分析时出错: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"生成月度分析失败: {str(e)}")
+
+async def generate_analysis_with_timeout(request):
+    # 将同步函数包装成异步执行
+    return ai_service.generate_analysis(
+        {
+            "top_sales": request["top_sales_amount"],
+            "top_increased": request["top_increased"],
+            "top_decreased": request["top_decreased"],
+            "country_distribution": request["country_distribution"],
+            "platform_data": request["platform_comparison"]
         }
     )
 
