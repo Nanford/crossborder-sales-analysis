@@ -328,15 +328,16 @@ async def monthly_ai_analysis(request: AnalysisRequest):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"生成月度分析失败: {str(e)}")
 
-async def generate_analysis_with_timeout(request):
+async def generate_analysis_with_timeout(request: AnalysisRequest):
     # 将同步函数包装成异步执行
     return ai_service.generate_analysis(
         {
-            "top_sales": request["top_sales_amount"],
-            "top_increased": request["top_increased"],
-            "top_decreased": request["top_decreased"],
-            "country_distribution": request["country_distribution"],
-            "platform_data": request["platform_comparison"]
+            "top_sales": request.top_sales_amount,
+            "top_increased": request.top_increased,
+            "top_decreased": request.top_decreased,
+            "country_distribution": request.country_distribution,
+            "platform_data": request.platform_comparison,
+            "salesperson_data": getattr(request, 'salesperson_comparison', [])
         }
     )
 
